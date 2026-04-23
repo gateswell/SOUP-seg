@@ -68,4 +68,7 @@ data/
 Thumbs.db
 
 # Logs
-*.log
+*.log.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

@@ -141,7 +141,7 @@ def compute_local_intensity_features(
 
     for prop in props:
         # Mean intensity inside the nucleus
-        mean_inside = prop.mean_intensity
+        mean_inside = prop.intensity_mean
 
         # Measure intensity in a ring around the nucleus
         # Ring = dilated nucleus minus nucleus

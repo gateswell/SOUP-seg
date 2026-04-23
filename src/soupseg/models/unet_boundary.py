@@ -36,7 +36,7 @@ except ImportError:
 
 
 # ---------------------------------------------------------------------------
-# Model components
+# Model components (only defined when PyTorch is available)
 # ---------------------------------------------------------------------------
 
 if TORCH_AVAILABLE:
@@ -315,6 +315,17 @@ class UNetConfig:
                 return "cuda"
             return "cpu"
         return self.device
+
+
+# Stub classes for when PyTorch is not available
+if not TORCH_AVAILABLE:
+    class UNetBoundaryDetector:
+        """Stub: PyTorch not installed."""
+        pass
+
+    class BoundaryLoss:
+        """Stub: PyTorch not installed."""
+        pass
 
 
 def create_unet_model(config: Optional[UNetConfig] = None) -> "UNetBoundaryDetector":

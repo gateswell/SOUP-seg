@@ -13,8 +13,13 @@ from .refine import (
     apply_cell_size_constraints,
     # v1.1.0 new exports
     compute_boundary_map,
-    adaptive_expand_nuclei,
 )
+
+# v1.1.0: adaptive radius (from models, re-exported for convenience)
+try:
+    from .refine import adaptive_expand_nuclei
+except ImportError:
+    from ..models.adaptive_radius import adaptive_expand_nuclei
 
 __all__ = [
     # Preprocessing

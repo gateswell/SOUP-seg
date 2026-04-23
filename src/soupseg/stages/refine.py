@@ -59,16 +59,15 @@ except ImportError:
             "maxflow not found. Graph Cut requires: pip install PyMaxflow"
         )
 
-from .adaptive_radius import (
+from ..models.adaptive_radius import (
     AdaptiveRadiusConfig,
     compute_adaptive_radius_map,
     compute_adaptive_radius_map_torch,
     apply_adaptive_dilation,
     adaptive_expand_nuclei,
 )
-from .unet_boundary import (
+from ..models.unet_boundary import (
     UNetConfig,
-    UNetBoundaryDetector,
     create_unet_model,
     detect_boundaries_unet,
     TORCH_AVAILABLE as UNET_TORCH_AVAILABLE,
@@ -474,7 +473,7 @@ def watershed_refinement(
 ) -> np.ndarray:
     """Fallback refinement using marker-controlled watershed."""
     from scipy.ndimage import label, distance_transform_edt
-    from skimage.morphology import watershed
+    from skimage.segmentation import watershed
 
     labeled = initial_mask.copy()
     markers = label(labeled > 0)[0]
