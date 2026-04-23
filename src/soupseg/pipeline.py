@@ -95,6 +95,8 @@ class SoupSeg:
         """
         self.config = config or self._default_config()
         self.pixel_size_um = pixel_size_um
+        self._unet_model = None  # Lazy-loaded U-Net model
+        self._gnn_model = None   # Lazy-loaded GNN model
     
     def _default_config(self) -> Dict[str, Any]:
         """Get default configuration."""
@@ -112,6 +114,41 @@ class SoupSeg:
             "min_area_um2": 50.0,
             "max_area_um2": 2000.0,
             "expansion_radius_um": 6.0,
+            
+            # --- v1.1.0: Adaptive Radius ---
+            "use_adaptive_radius": False,
+            "adaptive_radius_config": {
+                "adaptive_base_radius_um": 6.0,
+                "adaptive_min_radius_um": 3.0,
+                "adaptive_max_radius_um": 12.0,
+                "adaptive_density_sigma_um": 30.0,
+                "adaptive_density_influence": 0.5,
+                "adaptive_intensity_influence": 0.3,
+                "adaptive_transcript_influence": 0.2,
+                "adaptive_smooth_sigma_px": 3.0,
+            },
+            
+            # --- v1.1.0: U-Net Boundary Detection ---
+            "use_unet_boundary": False,
+            "unet_boundary_config": {
+                "base_features": 32,
+                "depth": 4,
+                "device": "auto",
+                "tile_size": 512,
+                "tile_overlap": 64,
+            },
+            "unet_boundary_threshold": 0.5,
+            
+            # --- v1.1.0: GNN Boundary Refinement ---
+            "use_gnn_boundary": False,
+            "gnn_boundary_config": {
+                "hidden_dim": 64,
+                "num_heads": 4,
+                "num_layers": 2,
+                "distance_threshold_um": 50.0,
+                "max_neighbors": 10,
+                "boundary_threshold": 0.5,
+            },
             
             # Transcript assignment
             "assignment_method": "voronoi",
@@ -184,16 +221,51 @@ class SoupSeg:
         
         # Stage 2: Nuclei detection and cell initialization
         print("Stage 2: Nuclei detection and cell initialization...")
-        nuclei_result, cell_mask, cell_properties = detect_nuclei(
-            preprocessed,
-            method=self.config.get("nuclei_method", "otsu"),
-            expansion_radius_um=self.config.get("expansion_radius_um", 6.0),
-            min_area_um2=self.config.get("min_area_um2", 50.0),
-            max_area_um2=self.config.get("max_area_um2", 2000.0),
-            pixel_size_um=self.pixel_size_um
-        )
-        print(f"  Detected {nuclei_result.n_nuclei} nuclei")
-        print(f"  Initialized {len(cell_properties)} cells")
+        
+        if self.config.get("use_adaptive_radius", False):
+            # Use adaptive radius expansion (v1.1.0)
+            from .stages.adaptive_radius import (
+                adaptive_detect_nuclei,
+                AdaptiveRadiusStageConfig,
+            )
+            adaptive_cfg_dict = self.config.get("adaptive_radius_config", {})
+            stage_config = AdaptiveRadiusStageConfig(
+                nuclei_method=self.config.get("nuclei_method", "otsu"),
+                min_area_um2=self.config.get("min_area_um2", 50.0),
+                max_area_um2=self.config.get("max_area_um2", 2000.0),
+                pixel_size_um=self.pixel_size_um,
+                use_adaptive_radius=True,
+                expansion_radius_um=self.config.get("expansion_radius_um", 6.0),
+                adaptive_base_radius_um=adaptive_cfg_dict.get("adaptive_base_radius_um", 6.0),
+                adaptive_min_radius_um=adaptive_cfg_dict.get("adaptive_min_radius_um", 3.0),
+                adaptive_max_radius_um=adaptive_cfg_dict.get("adaptive_max_radius_um", 12.0),
+                adaptive_density_sigma_um=adaptive_cfg_dict.get("adaptive_density_sigma_um", 30.0),
+                adaptive_density_influence=adaptive_cfg_dict.get("adaptive_density_influence", 0.5),
+                adaptive_intensity_influence=adaptive_cfg_dict.get("adaptive_intensity_influence", 0.3),
+                adaptive_transcript_influence=adaptive_cfg_dict.get("adaptive_transcript_influence", 0.2),
+                adaptive_smooth_sigma_px=adaptive_cfg_dict.get("adaptive_smooth_sigma_px", 3.0),
+                verbose=False,
+            )
+            # Build transcript coords
+            transcript_coords = transcripts_df[['x', 'y']].values if 'x' in transcripts_df.columns else None
+            nuclei_result, cell_mask, cell_properties = adaptive_detect_nuclei(
+                preprocessed,
+                transcript_coords=transcript_coords,
+                config=stage_config,
+            )
+            print(f"  [Adaptive Radius v1.1.0] Detected {nuclei_result.n_nuclei} nuclei")
+            print(f"  Initialized {len(cell_properties)} cells with adaptive expansion")
+        else:
+            nuclei_result, cell_mask, cell_properties = detect_nuclei(
+                preprocessed,
+                method=self.config.get("nuclei_method", "otsu"),
+                expansion_radius_um=self.config.get("expansion_radius_um", 6.0),
+                min_area_um2=self.config.get("min_area_um2", 50.0),
+                max_area_um2=self.config.get("max_area_um2", 2000.0),
+                pixel_size_um=self.pixel_size_um
+            )
+            print(f"  Detected {nuclei_result.n_nuclei} nuclei")
+            print(f"  Initialized {len(cell_properties)} cells")
         print()
         
         # Build cell polygons
@@ -265,7 +337,7 @@ class SoupSeg:
         # Build metadata
         metadata = {
             "pipeline": "SoupSeg",
-            "version": "0.1.0",
+            "version": "1.1.0",
             "pixel_size_um": self.pixel_size_um,
             "image_shape": list(image.shape),
             "n_cells_initial": len(cell_properties),

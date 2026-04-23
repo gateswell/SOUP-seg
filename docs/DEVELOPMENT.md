@@ -2,8 +2,8 @@
 
 **Project**: ssDNA-Informed Iterative Cell Segmentation for Stereo-seq  
 **Repository**: https://github.com/gateswell/SOUP-seg  
-**Version**: 0.1.0  
-**Date**: 2026-04-23  
+**Version**: 1.1.0  
+**Date**: 2026-04-24  
 **Developer**: AI Assistant (via OpenClaw)  
 **User**: gateswell  
 
@@ -393,6 +393,35 @@ soup-seg/
 
 ## 11. Change Log
 
+### v1.1.0 (2026-04-24)
+- **U-Net Boundary Detection** (`models/unet_boundary.py`):
+  - 4-level lightweight U-Net (PyTorch)
+  - BCE + Dice combined loss
+  - Tiling inference with Hann-window blending for large images
+  - Training pipeline with data augmentation (flip, rotation)
+  - Optional GPU acceleration (CUDA auto-detected)
+- **Adaptive Dilation Radius** (`models/adaptive_radius.py`, `stages/adaptive_radius.py`):
+  - Per-cell adaptive expansion based on:
+    1. Local cell density (Gaussian-smoothed)
+    2. ssDNA image intensity (ring spread)
+    3. Transcript density (spatial binning)
+  - Configurable min/max radius bounds
+  - GPU-accelerated path via PyTorch (scipy fallback)
+- **GNN Boundary Refinement** (`models/gnn_boundary.py`):
+  - 2-layer Graph Attention Network (GAT)
+  - Node features: area, eccentricity, intensity, centroid
+  - Edge features: centroid distance, area sum/diff
+  - Cell-cell boundary probability prediction
+  - Merge low-probability edges to correct over-segmentation
+- **PyTorch Integration**:
+  - All new modules use PyTorch as optional dependency
+  - `TORCH_AVAILABLE` guard throughout — falls back gracefully
+  - CUDA auto-detection when available
+- **Pipeline Updates**:
+  - New config flags: `use_unet_boundary`, `use_adaptive_radius`, `use_gnn_boundary`
+  - All v1.0.0 APIs remain unchanged (backward compatible)
+- **Requirements** updated: torch>=1.10 added as optional dependency
+
 ### v0.1.0 (2026-04-23)
 - Initial implementation
 - 4-stage pipeline complete
@@ -402,4 +431,4 @@ soup-seg/
 
 ---
 
-*Last updated: 2026-04-23 23:18 GMT+8*
+*Last updated: 2026-04-24 02:10 GMT+8*

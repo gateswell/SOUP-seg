@@ -54,6 +54,9 @@
 │  • 形态学操作 (Opening / Closing / Watershed)            │
 │  • 核中心定位 (Centroid)                                  │
 │  • 细胞边界初始化 (Nuclear Expansion)                     │
+│  • ▼ v1.1.0: 自适应膨胀半径 (Adaptive Radius)             │
+│    - 基于局部细胞密度、图像强度、转录本密度                 │
+│    - 高密度区域 → 较小膨胀 | 低密度 → 较大膨胀            │
 │  输出: 初始细胞多边形边界 + 核掩膜                          │
 └────────────────────────┬─────────────────────────────────┘
                          │
@@ -70,6 +73,12 @@
 ┌──────────────────────────────────────────────────────────┐
 │       Stage 4: 迭代优化 (Iterative Refinement)           │
 │  • 边界能量计算 (图像梯度 + 转录本密度)                    │
+│  • ▼ v1.1.0: U-Net 边界检测 (PyTorch)                   │
+│    - 4-level U-Net, 输入 ssDNA → 边界概率热力图           │
+│    - BCE + Dice Loss, 支持 tiling inference               │
+│  • ▼ v1.1.0: GNN 边界细化 (PyTorch GAT)                  │
+│    - 细胞图 (nodes=细胞, edges=邻接)                      │
+│    - 2-layer Graph Attention Network                      │
 │  • Graph Cut / Random Walk 优化                           │
 │  • 扩散校正 (Deconvolution)                               │
 │  • 异常细胞检测与修正                                      │
@@ -380,25 +389,16 @@ soup-seg/
 │       │   ├── preprocess.py  # Stage 1: 图像预处理
 │       │   ├── nuclei.py     # Stage 2: 核检测
 │       │   ├── assignment.py  # Stage 3: 转录本归属
-│       │   └── refine.py     # Stage 4: 迭代优化
-│       │
-│       ├── utils/
-│       │   ├── __init__.py
-│       │   ├── image.py       # 图像工具
-│       │   ├── geometry.py    # 几何操作
-│       │   ├── graph.py       # 图操作
-│       │   ├── io.py          # 输入输出
-│       │   └── transform.py   # 配准变换
+│       │   ├── refine.py     # Stage 4: 迭代优化
+│       │   └── adaptive_radius.py  # v1.1.0: 自适应膨胀半径
 │       │
 │       ├── models/
 │       │   ├── __init__.py
 │       │   ├── cell.py        # Cell 数据结构
-│       │   └── transcript.py # Transcript 数据结构
-│       │
-│       └── metrics/
-│           ├── __init__.py
-│           ├── qc.py          # 质量控制指标
-│           └── benchmark.py   # Benchmark 工具
+│       │   ├── transcript.py # Transcript 数据结构
+│       │   ├── unet_boundary.py  # v1.1.0: U-Net 边界检测
+│       │   ├── gnn_boundary.py  # v1.1.0: GNN 边界细化
+│       │   └── adaptive_radius.py  # v1.1.0: 自适应半径计算
 │
 ├── config/
 │   └── default.yaml          # 默认配置
@@ -489,9 +489,9 @@ result = refine.save(final_polygons, final_assignments, 'output/')
 - 仅支持 2D 切片，暂不支持 3D 重建
 
 ### 9.2 计划开发
-- [ ] 深度学习版：U-Net / GNN 用于边界检测
+- [x] v1.1.0: U-Net / GNN 用于边界检测 (PyTorch)
+- [x] v1.1.0: 基于数据自适应调整膨胀半径
 - [ ] 3D 支持：从连续切片重建 3D 细胞结构
-- [ ] 自动化参数：基于数据自适应调整膨胀半径
 - [ ] GPU 加速：CuPy / PyTorch 实现
 - [ ] Web 界面：基于 napari 的可视化编辑
 

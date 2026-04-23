@@ -11,6 +11,9 @@ from .refine import (
     build_graphcut_segmentation,
     simple_refinement,
     apply_cell_size_constraints,
+    # v1.1.0 new exports
+    compute_boundary_map,
+    adaptive_expand_nuclei,
 )
 
 __all__ = [
@@ -33,4 +36,7 @@ __all__ = [
     "build_graphcut_segmentation",
     "simple_refinement",
     "apply_cell_size_constraints",
+    # v1.1.0
+    "compute_boundary_map",
+    "adaptive_expand_nuclei",
 ]
