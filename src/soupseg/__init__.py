@@ -12,10 +12,15 @@ from .pipeline import SoupSeg
 from .models.cell import Cell, CellCollection
 from .models.transcript import Transcript, TranscriptCollection
 
+from .io import cells_to_anndata, save_polygons_geojson, save_cell_mask
+
 __all__ = [
     "SoupSeg",
     "Cell",
-    "CellCollection", 
+    "CellCollection",
     "Transcript",
     "TranscriptCollection",
+    "cells_to_anndata",
+    "save_polygons_geojson",
+    "save_cell_mask",
 ]

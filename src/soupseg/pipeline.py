@@ -57,6 +57,26 @@ class SoupSegResult:
             with open(output_dir / "convergence.json", 'w') as f:
                 json.dump(self.convergence_info, f, indent=2)
     
+    def to_h5ad(self):
+        """Convert results to AnnData object."""
+        return self.cells.to_anndata(self.transcripts)
+
+    def save_h5ad(self, path):
+        """Save results as h5ad file."""
+        adata = self.to_h5ad()
+        adata.write_h5ad(path)
+
+    def save_polygons(self, path):
+        """Save cell polygons as GeoJSON."""
+        self.cells.save_polygons(path)
+
+    def save_mask(self, path, pixel_size_um=None):
+        """Save labeled cell mask as TIFF."""
+        if pixel_size_um is None:
+            pixel_size_um = self.metadata.get("pixel_size_um", 0.5)
+        shape = tuple(self.metadata.get("image_shape", [1000, 1000]))
+        self.cells.save_mask(shape, path, pixel_size_um)
+
     def summary(self) -> Dict[str, Any]:
         """Get summary statistics."""
         return {

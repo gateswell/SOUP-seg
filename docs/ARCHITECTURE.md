@@ -81,6 +81,8 @@
 输出层
 ──────────────────────────────────────────────────────────────
     • 细胞分割结果 (CSV/JSON/GeoJSON)
+    • h5ad 文件 (AnnData, 可被 Scanpy/Squidpy 直接读取)
+    • 32-bit 标记掩膜 (TIFF)
     • 每个细胞的转录本列表
     • 质量报告 (QC metrics)
     • 可视化叠加图
@@ -395,6 +397,10 @@ soup-seg/
 │       │   ├── cell.py        # Cell 数据结构
 │       │   └── transcript.py # Transcript 数据结构
 │       │
+│       ├── io/                # 输出格式导出
+│       │   ├── __init__.py
+│       │   └── h5ad_export.py  # h5ad / GeoJSON / mask TIFF 导出
+│       │
 │       └── metrics/
 │           ├── __init__.py
 │           ├── qc.py          # 质量控制指标
@@ -445,11 +451,22 @@ result = seg.run(
 )
 
 # 查看结果
-print(f"分割了 {result.n_cells} 个细胞")
-print(f"转录本归属率: {result.assignment_rate:.1%}")
+print(f"分割了 {len(result.cells)} 个细胞")
+print(f"转录本归属率: {result.transcripts.summary_stats()['assignment_rate']:.1%}")
 
-# 可视化
-result.plot_overlay(save='output/segmentation.png')
+# 导出为 h5ad（可被 Scanpy/Squidpy 直接读取）
+result.save_h5ad('output/result.h5ad')
+
+# 导出细胞边界 GeoJSON
+result.save_polygons('output/polygons.geojson')
+
+# 导出标记掩膜 TIFF
+result.save_mask('output/cell_mask.tiff')
+
+# 或直接获取 AnnData 对象进行进一步分析
+adata = result.to_h5ad()
+import scanpy as sc
+sc.pl.spatial(adata, color='n_genes')
 ```
 
 ### 8.2 分步使用

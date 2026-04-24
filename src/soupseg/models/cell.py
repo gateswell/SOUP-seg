@@ -149,6 +149,21 @@ class CellCollection:
             data = json.load(f)
         return cls.from_dict(data)
     
+    def to_anndata(self, transcripts):
+        """Convert to AnnData with transcript expression data."""
+        from ..io.h5ad_export import cells_to_anndata
+        return cells_to_anndata(self, transcripts)
+
+    def save_polygons(self, output_path):
+        """Save cell polygons as GeoJSON."""
+        from ..io.h5ad_export import save_polygons_geojson
+        save_polygons_geojson(self.cells, output_path)
+
+    def save_mask(self, image_shape, output_path, pixel_size_um=0.5):
+        """Save 32-bit labeled mask as TIFF."""
+        from ..io.h5ad_export import save_cell_mask
+        save_cell_mask(self.cells, image_shape, output_path, pixel_size_um)
+
     def summary_stats(self) -> Dict[str, Any]:
         """Compute summary statistics."""
         if not self.cells:
