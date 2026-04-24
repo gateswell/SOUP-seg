@@ -57,6 +57,77 @@ class SoupSegResult:
             with open(output_dir / "convergence.json", 'w') as f:
                 json.dump(self.convergence_info, f, indent=2)
     
+    # ------------------------------------------------------------------
+    # v1.1.0: Export convenience methods
+    # ------------------------------------------------------------------
+
+    def to_h5ad(self, obsm_spatial_name: str = "spatial"):
+        """
+        Convert results to AnnData (requires anndata/scanpy).
+
+        The h5ad output is kept lean: expression matrix + obs + obsm[spatial].
+        Polygon data is *not* included by default; use save_polygons() or
+        add_polygons_to_anndata() if you need it.
+
+        Args:
+            obsm_spatial_name: Key for spatial coordinates in obsm.
+
+        Returns:
+            AnnData object.
+
+        Raises:
+            ImportError: If anndata is not installed.
+        """
+        from .io.h5ad_export import cells_to_anndata
+        return cells_to_anndata(self.cells, self.transcripts, obsm_spatial_name)
+
+    def save_h5ad(self, output_path: str, obsm_spatial_name: str = "spatial"):
+        """
+        Convert to AnnData and write to an .h5ad file.
+
+        Args:
+            output_path: Path to the output .h5ad file.
+            obsm_spatial_name: Key for spatial coordinates in obsm.
+        """
+        adata = self.to_h5ad(obsm_spatial_name)
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        adata.write_h5ad(output_path)
+
+    def save_polygons(self, output_path: str):
+        """
+        Save cell polygons as GeoJSON.
+
+        Args:
+            output_path: Path to the output .geojson file.
+        """
+        self.cells.save_polygons(output_path)
+
+    def save_mask(
+        self,
+        output_path: str,
+        pixel_size_um: float = 0.5,
+    ):
+        """
+        Save segmentation mask as a 32-bit TIFF.
+
+        The image shape is read from self.metadata["image_shape"].
+
+        Args:
+            output_path: Path to the output .tiff file.
+            pixel_size_um: Pixel size for coordinate conversion.
+
+        Raises:
+            ImportError: If tifffile is not installed.
+            ValueError: If image_shape is not in metadata.
+        """
+        image_shape = self.metadata.get("image_shape")
+        if image_shape is None:
+            raise ValueError(
+                "image_shape not found in metadata. "
+                "Call cells.save_mask() directly with image_shape."
+            )
+        self.cells.save_mask(tuple(image_shape), output_path, pixel_size_um)
+
     def summary(self) -> Dict[str, Any]:
         """Get summary statistics."""
         return {

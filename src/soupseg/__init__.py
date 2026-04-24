@@ -32,6 +32,16 @@ try:
 except (ImportError, AttributeError):
     pass
 
+# v1.1.0: I/O export utilities
+from .io.h5ad_export import (
+    cells_to_anndata,
+    save_polygons_geojson,
+    save_cell_mask,
+    add_polygons_to_anndata,
+    SCANPY_AVAILABLE,
+    TIFFFILE_AVAILABLE,
+)
+
 __all__ = [
     "SoupSeg",
     "Cell",
@@ -45,4 +55,11 @@ __all__ = [
     "AdaptiveRadiusConfig",
     "compute_adaptive_radius_map",
     "adaptive_expand_nuclei",
+    # v1.1.0: I/O export
+    "cells_to_anndata",
+    "save_polygons_geojson",
+    "save_cell_mask",
+    "add_polygons_to_anndata",
+    "SCANPY_AVAILABLE",
+    "TIFFFILE_AVAILABLE",
 ]

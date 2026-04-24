@@ -399,6 +399,10 @@ soup-seg/
 │       │   ├── unet_boundary.py  # v1.1.0: U-Net 边界检测
 │       │   ├── gnn_boundary.py  # v1.1.0: GNN 边界细化
 │       │   └── adaptive_radius.py  # v1.1.0: 自适应半径计算
+│       │
+│       └── io/                    # v1.1.0: 输出格式
+│           ├── __init__.py
+│           └── h5ad_export.py  # h5ad / GeoJSON / Mask TIFF
 │
 ├── config/
 │   └── default.yaml          # 默认配置

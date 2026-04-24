@@ -9,7 +9,7 @@ pydantic>=1.9
 # Image processing
 scikit-image>=0.19
 opencv-python>=4.5
-tifffile>=2021.7
+tifffile>=2022.7.0
 Pillow>=9.0
 
 # Geometry
@@ -26,6 +26,7 @@ torchvision>=0.15
 # Spatial transcriptomics (optional but recommended)
 scanpy>=1.9
 squidpy>=1.1
+anndata>=0.8.0
 
 # Visualization
 matplotlib>=3.5

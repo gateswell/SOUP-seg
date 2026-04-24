@@ -345,6 +345,9 @@ soup-seg/
 │   │   ├── __init__.py
 │   │   ├── cell.py            # Cell data model
 │   │   └── transcript.py      # Transcript data model
+│   ├── io/                    # v1.1.0: Output format exporters
+│   │   ├── __init__.py
+│   │   └── h5ad_export.py     # h5ad / GeoJSON / Mask TIFF export
 │   └── stages/
 │       ├── __init__.py
 │       ├── preprocess.py      # Stage 1
@@ -417,10 +420,17 @@ soup-seg/
   - All new modules use PyTorch as optional dependency
   - `TORCH_AVAILABLE` guard throughout — falls back gracefully
   - CUDA auto-detection when available
+- **Output Format Exports** (`io/h5ad_export.py`):
+  - `to_h5ad()` / `save_h5ad()`: AnnData export (cells × genes, obs, obsm[spatial])
+  - `save_polygons()`: GeoJSON polygon export for GIS/napari
+  - `save_mask()`: 32-bit TIFF labeled mask
+  - h5ad is lean (no polygons by default); polygon/mask are optional
+  - `SCANPY_AVAILABLE` / `TIFFFILE_AVAILABLE` dependency guards
+  - Convenience methods on both `CellCollection` and `SoupSegResult`
 - **Pipeline Updates**:
   - New config flags: `use_unet_boundary`, `use_adaptive_radius`, `use_gnn_boundary`
-  - All v1.0.0 APIs remain unchanged (backward compatible)
-- **Requirements** updated: torch>=1.10 added as optional dependency
+  - All v0.1.0 APIs remain unchanged (backward compatible)
+- **Requirements** updated: torch>=1.10, anndata>=0.8.0 added; tifffile>=2022.7.0
 
 ### v0.1.0 (2026-04-23)
 - Initial implementation
@@ -431,4 +441,80 @@ soup-seg/
 
 ---
 
-*Last updated: 2026-04-24 02:10 GMT+8*
+## 12. Output Formats (v1.1.0)
+
+### 12.1 Overview
+
+SoupSeg supports multiple output formats for interoperability with downstream analysis tools:
+
+| Format | Method | Contains | Use Case |
+|--------|--------|----------|----------|
+| **h5ad** | `result.save_h5ad(path)` | Expression matrix + cell metadata + spatial coords | Scanpy/Squidpy downstream analysis |
+| **GeoJSON** | `result.save_polygons(path)` | Cell boundary polygons + properties | GIS tools, napari, custom visualization |
+| **TIFF mask** | `result.save_mask(path)` | Labeled integer mask | Image-based tools, CellProfiler |
+| JSON | `result.save(dir)` (existing) | Cells + transcripts + metadata | Legacy / lightweight inspection |
+
+### 12.2 h5ad Export
+
+The h5ad format is the standard for single-cell analysis with Scanpy/Squidpy.
+SoupSeg generates a lean AnnData that contains:
+
+- **X**: cells × genes expression matrix (float32)
+- **obs**: cell_id, area_um2, n_transcripts, n_genes, centroid_x, centroid_y
+- **obsm["spatial"]**: 2D spatial coordinates (centroids, in microns)
+- **uns**: pipeline metadata (version, etc.)
+
+**By design, polygons are NOT included** in the default h5ad export to keep the file lean.
+Use `save_polygons()` for polygon data, or `add_polygons_to_anndata()` to embed them.
+
+```python
+# Save as h5ad
+result.save_h5ad("output/result.h5ad")
+
+# Or get AnnData object directly
+adata = result.to_h5ad()
+adata.write_h5ad("output/result.h5ad")
+
+# Load in Scanpy
+import scanpy as sc
+adata = sc.read_h5ad("output/result.h5ad")
+sc.pl.spatial(adata, color="n_genes")
+```
+
+### 12.3 GeoJSON Polygon Export
+
+GeoJSON is widely supported by GIS tools (QGIS), napari, and spatial analysis libraries.
+Each cell is a Feature with polygon geometry in micron coordinates.
+
+```python
+result.save_polygons("output/polygons.geojson")
+```
+
+### 12.4 TIFF Mask Export
+
+The mask TIFF is a 32-bit integer image where each pixel value is the cell label index
+(extracted from cell_id, e.g. "cell_00042" → 42). Background is 0.
+
+```python
+result.save_mask("output/segmentation_mask.tiff")
+# Or with custom pixel size
+result.save_mask("output/segmentation_mask.tiff", pixel_size_um=0.5)
+```
+
+### 12.5 Dependency Guards
+
+All new export functions use lazy imports with availability guards:
+- `SCANPY_AVAILABLE`: True if anndata/scanpy is installed
+- `TIFFFILE_AVAILABLE`: True if tifffile is installed
+- Calling a function without its dependency raises a clear `ImportError`
+- The core pipeline runs without these optional dependencies
+
+### 12.6 Backward Compatibility
+
+- The original `result.save(dir)` method is unchanged (JSON output)
+- `cells.json` and `transcripts.json` are still produced
+- New export methods are additive — no breaking changes
+
+---
+
+*Last updated: 2026-04-24 08:10 GMT+8*

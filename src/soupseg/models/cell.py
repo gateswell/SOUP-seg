@@ -168,3 +168,58 @@ class CellCollection:
             "mean_genes_per_cell": np.mean(n_genes),
             "median_genes_per_cell": np.median(n_genes),
         }
+
+    # ------------------------------------------------------------------
+    # v1.1.0: Export convenience methods
+    # ------------------------------------------------------------------
+
+    def to_anndata(
+        self,
+        transcripts: "TranscriptCollection",
+        obsm_spatial_name: str = "spatial",
+    ):
+        """
+        Convert to AnnData (requires anndata/scanpy).
+
+        Args:
+            transcripts: TranscriptCollection with cell assignments.
+            obsm_spatial_name: Key for spatial coordinates in obsm.
+
+        Returns:
+            AnnData object (cells × genes).
+
+        Raises:
+            ImportError: If anndata is not installed.
+        """
+        from ..io.h5ad_export import cells_to_anndata
+        return cells_to_anndata(self, transcripts, obsm_spatial_name)
+
+    def save_polygons(self, output_path: str):
+        """
+        Save cell polygons as GeoJSON.
+
+        Args:
+            output_path: Path to the output .geojson file.
+        """
+        from ..io.h5ad_export import save_polygons_geojson
+        save_polygons_geojson(self, output_path)
+
+    def save_mask(
+        self,
+        image_shape: Tuple[int, int],
+        output_path: str,
+        pixel_size_um: float = 0.5,
+    ):
+        """
+        Save segmentation mask as a 32-bit TIFF.
+
+        Args:
+            image_shape: (height, width) in pixels.
+            output_path: Path to the output .tiff file.
+            pixel_size_um: Pixel size for coordinate conversion.
+
+        Raises:
+            ImportError: If tifffile is not installed.
+        """
+        from ..io.h5ad_export import save_cell_mask
+        save_cell_mask(self, image_shape, output_path, pixel_size_um)
